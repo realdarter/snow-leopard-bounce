@@ -24,7 +24,7 @@ def enable_dpi_awareness() -> None:
 
 
 class MusicPlayer:
-    """Play the included tune or a user supplied, licensed song.mp3."""
+    """Play a user supplied MP3, the bundled song, or the backup tune."""
 
     def __init__(self) -> None:
         self.send = ctypes.windll.winmm.mciSendStringW
@@ -43,12 +43,13 @@ class MusicPlayer:
         self.close()
         song = self.external_song()
         if song.is_file():
-            if not self.send(f'open "{song}" type mpegvideo alias snowcatmusic', None, 0, None):
-                self.opened = True
-                if not self.send("play snowcatmusic repeat", None, 0, None):
-                    self.track_name = "Your local song"
-                    return True
-                self.close()
+            if self.play_mp3(song):
+                self.track_name = "Your local song"
+                return True
+        bundled_song = asset("Blue-Skies.mp3")
+        if bundled_song.is_file() and self.play_mp3(bundled_song):
+            self.track_name = "Blue Skies by Silent Partner"
+            return True
         try:
             winsound.PlaySound(
                 str(asset("cat-tune.wav")),
@@ -59,6 +60,15 @@ class MusicPlayer:
             return True
         except RuntimeError:
             return False
+
+    def play_mp3(self, song: Path) -> bool:
+        if self.send(f'open "{song}" type mpegvideo alias snowcatmusic', None, 0, None):
+            return False
+        self.opened = True
+        if self.send("play snowcatmusic repeat", None, 0, None):
+            self.close()
+            return False
+        return True
 
     def close(self) -> None:
         if self.opened:
@@ -114,7 +124,7 @@ class BounceApp:
         tk.Label(self.root, image=self.large_image, bg="#101521").pack()
         self.status = tk.Label(
             self.root,
-            text="Original cat tune",
+            text="Blue Skies by Silent Partner",
             font=("Segoe UI", 10),
             fg="#d5d2e6",
             bg="#101521",

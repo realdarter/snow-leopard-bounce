@@ -3,6 +3,7 @@ build/
 dist/
 *.spec
 *.mp3
+!Blue-Skies.mp3
 *.m4a
 *.zip
 preview*.png
