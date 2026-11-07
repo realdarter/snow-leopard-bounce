@@ -1,5 +1,3 @@
-"""Create square cat images, a Windows icon, and an original looping tune."""
-
 from pathlib import Path
 
 from PIL import Image
@@ -8,7 +6,6 @@ from PIL import Image
 HERE = Path(__file__).resolve().parent
 photo = Image.open(HERE / "cat-source.jpg").convert("RGB")
 side = min(photo.size)
-# Keep the ears and most of the raised paw in a square crop.
 left = (photo.width - side) // 2
 top = min(max(0, round(photo.height * 0.075)), photo.height - side)
 square = photo.crop((left, top, left + side, top + side))

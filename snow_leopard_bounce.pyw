@@ -1,5 +1,3 @@
-"""Snow Leopard Bounce: 50 bouncing cat windows owned by one main window."""
-
 import argparse
 import ctypes
 import math
@@ -24,15 +22,12 @@ def enable_dpi_awareness() -> None:
 
 
 class MusicPlayer:
-    """Play a user supplied MP3, the bundled song, or the backup tune."""
-
     def __init__(self) -> None:
         self.send = ctypes.windll.winmm.mciSendStringW
         self.send.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint, ctypes.c_void_p]
         self.send.restype = ctypes.c_uint
         self.opened = False
         self.wav_playing = False
-        self.track_name = "Original cat tune"
 
     @staticmethod
     def external_song() -> Path:
@@ -42,13 +37,10 @@ class MusicPlayer:
     def play(self) -> bool:
         self.close()
         song = self.external_song()
-        if song.is_file():
-            if self.play_mp3(song):
-                self.track_name = "Your local song"
-                return True
+        if song.is_file() and self.play_mp3(song):
+            return True
         bundled_song = asset("Blue-Skies.mp3")
         if bundled_song.is_file() and self.play_mp3(bundled_song):
-            self.track_name = "Blue Skies by Silent Partner"
             return True
         try:
             winsound.PlaySound(
@@ -56,7 +48,6 @@ class MusicPlayer:
                 winsound.SND_FILENAME | winsound.SND_ASYNC | winsound.SND_LOOP,
             )
             self.wav_playing = True
-            self.track_name = "Original cat tune"
             return True
         except RuntimeError:
             return False
@@ -189,7 +180,6 @@ class BounceApp:
         angle = self.rng.uniform(0, 2 * math.pi)
         window = tk.Toplevel(self.root)
         window.overrideredirect(True)
-        window.configure(bg="#101521")
         window.attributes("-topmost", True)
         window.geometry(f"{size}x{size}+{round(x)}+{round(y)}")
         tk.Label(window, image=self.small_image, borderwidth=0, highlightthickness=0).pack()
@@ -223,8 +213,6 @@ class BounceApp:
         max_y = max(0, self.root.winfo_screenheight() - size)
         for sprite in self.sprites:
             age = now - sprite["last_bounce"]
-            # The speed rises after impact, peaks at 0.22 s, then eases back
-            # to the selected average speed without ever stopping.
             pulse = 0.0 if age > 2.0 else (age / 0.22) * math.exp(1 - age / 0.22)
             speed = self.average_speed.get() * sprite["speed_factor"] * (1 + 0.95 * pulse)
             x = sprite["x"] + sprite["dx"] * speed * elapsed
@@ -242,7 +230,6 @@ class BounceApp:
                 sprite["last_bounce"] = now
             sprite["x"], sprite["y"] = x, y
             sprite["window"].geometry(f"+{round(x)}+{round(y)}")
-        # Keep the close control visible above the moving windows.
         self.root.lift()
         self.timer_id = self.root.after(33, self.move)
 
