@@ -83,9 +83,11 @@ class BounceApp:
     def __init__(self, count: int, duration: float, no_music: bool) -> None:
         self.root = tk.Tk()
         self.root.title("Snow Leopard Bounce")
-        self.root.configure(bg="#101521")
+        self.root.configure(bg="#f0f0f0")
         self.root.resizable(False, False)
-        self.root.geometry("470x470")
+        x = max(0, (self.root.winfo_screenwidth() - 390) // 2)
+        y = max(0, (self.root.winfo_screenheight() - 390) // 2)
+        self.root.geometry(f"390x390+{x}+{y}")
         self.root.attributes("-topmost", True)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.bind("<Escape>", lambda _event: self.close())
@@ -107,65 +109,14 @@ class BounceApp:
         self.small_image = tk.PhotoImage(file=str(asset("cat-small.png")))
         self.large_image = tk.PhotoImage(file=str(asset("cat-large.png")))
 
-        tk.Label(
-            self.root,
-            text="SNOW LEOPARD BOUNCE",
-            font=("Segoe UI", 18, "bold"),
-            fg="white",
-            bg="#101521",
-        ).pack(pady=(15, 2))
-        tk.Label(
-            self.root,
-            text="BOUNCE  •  BOOST  •  GLIDE",
-            font=("Segoe UI", 9, "bold"),
-            fg="#85e7da",
-            bg="#101521",
-        ).pack(pady=(0, 7))
-        tk.Label(self.root, image=self.large_image, bg="#101521").pack()
-        self.status = tk.Label(
-            self.root,
-            text="Blue Skies by Silent Partner",
-            font=("Segoe UI", 10),
-            fg="#d5d2e6",
-            bg="#101521",
-        )
-        self.status.pack(pady=(9, 4))
-
-        self.speed_label = tk.Label(
-            self.root,
-            text="Average speed: 125 px/s",
-            font=("Segoe UI", 10, "bold"),
-            fg="white",
-            bg="#101521",
-        )
-        self.speed_label.pack(pady=(3, 0))
-        tk.Scale(
-            self.root,
-            from_=60,
-            to=220,
-            resolution=5,
-            variable=self.average_speed,
-            command=self.update_speed_label,
-            orient="horizontal",
-            length=300,
-            showvalue=False,
-            bd=0,
-            highlightthickness=0,
-            sliderrelief="flat",
-            troughcolor="#30394d",
-            activebackground="#85e7da",
-            bg="#101521",
-            fg="white",
-        ).pack(pady=(0, 7))
-
+        tk.Label(self.root, text="i am pawing your computer", font=("Segoe UI", 16, "bold")).pack(pady=(12, 5))
+        tk.Label(self.root, image=self.large_image).pack()
         self.count_label = tk.Label(
             self.root,
-            text=f"Cats on screen: {count}",
-            font=("Segoe UI", 10, "bold"),
-            fg="white",
-            bg="#101521",
+            text=f"cats: {count}",
+            font=("Segoe UI", 10),
         )
-        self.count_label.pack(pady=(2, 0))
+        self.count_label.pack(pady=(7, 0))
         tk.Scale(
             self.root,
             from_=0,
@@ -174,53 +125,46 @@ class BounceApp:
             variable=self.target_count,
             command=self.update_count,
             orient="horizontal",
-            length=300,
+            length=270,
             showvalue=False,
-            bd=0,
-            highlightthickness=0,
-            sliderrelief="flat",
-            troughcolor="#30394d",
-            activebackground="#85e7da",
-            bg="#101521",
-            fg="white",
-        ).pack(pady=(0, 8))
+        ).pack()
 
-        buttons = tk.Frame(self.root, bg="#101521")
-        buttons.pack()
+        self.speed_label = tk.Label(
+            self.root,
+            text="speed: 125",
+            font=("Segoe UI", 10),
+        )
+        self.speed_label.pack()
+        tk.Scale(
+            self.root,
+            from_=60,
+            to=220,
+            resolution=5,
+            variable=self.average_speed,
+            command=self.update_speed_label,
+            orient="horizontal",
+            length=270,
+            showvalue=False,
+        ).pack()
+
+        buttons = tk.Frame(self.root)
+        buttons.pack(pady=(5, 0))
         self.music_button = tk.Button(
             buttons,
-            text="Mute music",
+            text="mute",
             command=self.toggle_music,
-            width=13,
-            font=("Segoe UI", 10, "bold"),
-            bg="#27394a",
-            fg="white",
-            activebackground="#3b566b",
-            activeforeground="white",
-            relief="flat",
-            bd=0,
-            pady=7,
-            cursor="hand2",
+            width=11,
         )
-        self.music_button.pack(side="left", padx=7)
+        self.music_button.pack(side="left", padx=4)
         tk.Button(
             buttons,
-            text="Close all",
+            text="stop cats",
             command=self.close,
-            width=13,
-            font=("Segoe UI", 10, "bold"),
-            bg="#a9415b",
-            fg="white",
-            activebackground="#cd617b",
-            activeforeground="white",
-            relief="flat",
-            bd=0,
-            pady=7,
-            cursor="hand2",
-        ).pack(side="left", padx=7)
+            width=11,
+        ).pack(side="left", padx=4)
 
         if self.no_music:
-            self.music_button.configure(state="disabled", text="Music off")
+            self.music_button.configure(state="disabled", text="no music")
         self.root.after(150, self.start)
         if duration > 0:
             self.root.after(round(duration * 1000), self.close)
@@ -303,10 +247,10 @@ class BounceApp:
         self.timer_id = self.root.after(33, self.move)
 
     def update_speed_label(self, _value: str) -> None:
-        self.speed_label.configure(text=f"Average speed: {self.average_speed.get()} px/s")
+        self.speed_label.configure(text=f"speed: {self.average_speed.get()}")
 
     def update_count(self, _value: str) -> None:
-        self.count_label.configure(text=f"Cats on screen: {self.target_count.get()}")
+        self.count_label.configure(text=f"cats: {self.target_count.get()}")
         if self.started:
             self.sync_count()
 
@@ -324,16 +268,15 @@ class BounceApp:
     def play_music(self) -> None:
         if self.music.play():
             self.music_on = True
-            self.status.configure(text=self.music.track_name)
-            self.music_button.configure(text="Mute music")
+            self.music_button.configure(text="mute")
         else:
-            self.music_button.configure(text="Music unavailable", state="disabled")
+            self.music_button.configure(text="no music", state="disabled")
 
     def toggle_music(self) -> None:
         if self.music_on:
             self.music.close()
             self.music_on = False
-            self.music_button.configure(text="Play music")
+            self.music_button.configure(text="unmute")
         else:
             self.play_music()
 

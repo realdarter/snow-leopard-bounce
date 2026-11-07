@@ -1,15 +1,15 @@
 # Snow Leopard Bounce
 
-A playful Windows app with 50 bouncing snow leopards. The square main window has sliders for the number of cats (0–100) and their average speed. Each cat briefly speeds up after a wall bounce and then returns to its average speed. Closing the main window closes every cat and stops the music.
+Fifty cat pictures bounce around the screen. Use the two sliders to change how many cats there are (0–100) and how fast they go. They speed up after a bounce, then slow back down. Close the main window to stop everything.
 
 ## Run on a Windows PC
 
 Download the latest `SnowLeopardBounce-Windows.zip` from [Releases](https://github.com/realdarter/snow-leopard-bounce/releases), extract it, and run `SnowLeopardBounce.exe` inside the extracted folder. No Python installation is needed.
 
-Or paste this one command into PowerShell on a Windows PC to download, extract, and launch it:
+To run it once and remove the temporary app files after closing it, paste this command into PowerShell. It does not remove files you manually downloaded or extracted. The readable version is in [run-once.ps1](run-once.ps1).
 
 ```powershell
-$ErrorActionPreference='Stop'; $z=Join-Path $env:TEMP 'SnowLeopardBounce-Windows.zip'; $d=Join-Path $env:LOCALAPPDATA 'SnowLeopardBounce'; Invoke-WebRequest 'https://github.com/realdarter/snow-leopard-bounce/releases/latest/download/SnowLeopardBounce-Windows.zip' -OutFile $z; Expand-Archive -LiteralPath $z -DestinationPath $d -Force; & (Join-Path $d 'SnowLeopardBounce\SnowLeopardBounce.exe')
+$ErrorActionPreference='Stop'; $t=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\'); $n='SnowLeopardBounce-'+[guid]::NewGuid().ToString('N'); $d=Join-Path $t $n; New-Item -ItemType Directory -Path $d | Out-Null; try { $z=Join-Path $d 'app.zip'; Invoke-WebRequest -UseBasicParsing 'https://github.com/realdarter/snow-leopard-bounce/releases/latest/download/SnowLeopardBounce-Windows.zip' -OutFile $z; Expand-Archive -LiteralPath $z -DestinationPath $d; Start-Process -FilePath (Join-Path $d 'SnowLeopardBounce\SnowLeopardBounce.exe') -Wait } finally { $p=[IO.Path]::GetFullPath($d); $i=Get-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue; if($i -and $p.StartsWith($t+'\',[StringComparison]::OrdinalIgnoreCase) -and $i.Name -eq $n -and -not ($i.Attributes -band [IO.FileAttributes]::ReparsePoint)) { Remove-Item -LiteralPath $p -Recurse -Force } }
 ```
 
 The release plays [Blue Skies by Silent Partner](https://www.youtube.com/watch?v=5kDO8hLu9iI). The project owner confirmed redistribution permission for this recording. If you have the rights to use a different track, place an MP3 named `song.mp3` next to `SnowLeopardBounce.exe`. The app will play it instead. An original tune is included as a playback fallback.
