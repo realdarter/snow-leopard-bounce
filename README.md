@@ -1,26 +1,32 @@
-# Snow Leopard Bounce
+# snow leopard bounce
 
-Fifty cats bounce around your screen. The sliders set the number of cats (0–100) and their speed. They speed up after hitting an edge, then slow back down. Close the main window to stop them.
+it puts 50 cats on your screen and they bounce around. that's pretty much it.
 
-## Run on a Windows PC
+use the sliders to change how many cats there are or how fast they go. they speed up when they hit the edge, then slow back down. you can minimize the main window and the cats will keep going. close it or hit **stop cats** to get rid of them and stop the music.
 
-Download `SnowLeopardBounce-Windows.zip` from [Releases](https://github.com/realdarter/snow-leopard-bounce/releases), unzip it, and run `SnowLeopardBounce.exe`. You don't need Python.
+## run it
 
-To run it once without keeping the downloaded files, paste this into PowerShell. It cleans up when you close the app. The same code is in [run-once.ps1](run-once.ps1).
+on a Windows PC, paste this into PowerShell:
 
 ```powershell
-$ErrorActionPreference='Stop'; $t=[IO.Path]::GetFullPath([IO.Path]::GetTempPath()).TrimEnd('\'); $n='SnowLeopardBounce-'+[guid]::NewGuid().ToString('N'); $d=Join-Path $t $n; New-Item -ItemType Directory -Path $d | Out-Null; try { $z=Join-Path $d 'app.zip'; Invoke-WebRequest -UseBasicParsing 'https://github.com/realdarter/snow-leopard-bounce/releases/latest/download/SnowLeopardBounce-Windows.zip' -OutFile $z; Expand-Archive -LiteralPath $z -DestinationPath $d; Start-Process -FilePath (Join-Path $d 'SnowLeopardBounce\SnowLeopardBounce.exe') -Wait } finally { $p=[IO.Path]::GetFullPath($d); $i=Get-Item -LiteralPath $p -Force -ErrorAction SilentlyContinue; if($i -and $p.StartsWith($t+'\',[StringComparison]::OrdinalIgnoreCase) -and $i.Name -eq $n -and -not ($i.Attributes -band [IO.FileAttributes]::ReparsePoint)) { Remove-Item -LiteralPath $p -Recurse -Force } }
+irm https://raw.githubusercontent.com/realdarter/snow-leopard-bounce/main/run-once.ps1 | iex
 ```
 
-The app plays [Blue Skies by Silent Partner](https://www.youtube.com/watch?v=5kDO8hLu9iI). The owner confirmed permission to include it. To use a different MP3, put a file named `song.mp3` next to the EXE. There's also a backup tune if MP3 playback fails.
+it downloads the latest release, runs it, and removes the temporary files when you close the app. leave PowerShell open while the cats are running.
 
-## Build from source
+you can also grab [the ZIP from Releases](https://github.com/realdarter/snow-leopard-bounce/releases), unzip it, and open `SnowLeopardBounce.exe`. no Python needed for that.
 
-On Windows with Python and PyInstaller:
+## music
+
+it plays [Blue Skies by Silent Partner](https://www.youtube.com/watch?v=5kDO8hLu9iI). i have permission to include the MP3. if you want your own song, put a file called `song.mp3` next to the EXE. there's a backup tune if the MP3 won't play.
+
+## build it yourself
+
+on Windows, with Python installed:
 
 ```powershell
 python -m pip install pyinstaller
-python -m PyInstaller --noconfirm --clean --onedir --windowed --name SnowLeopardBounce --icon cat.ico --add-data 'cat.ico;.' --add-data 'cat-small.png;.' --add-data 'cat-large.png;.' --add-data 'cat-tune.wav;.' --add-data 'Blue-Skies.mp3;.' snow_leopard_bounce.pyw
+python -m PyInstaller --noconfirm --clean SnowLeopardBounce.spec
 ```
 
-The cat photo came from the owner. The backup tune was made for this app.
+the cat photo is mine. the backup tune was made for this app.

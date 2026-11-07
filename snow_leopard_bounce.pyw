@@ -82,8 +82,6 @@ class BounceApp:
         self.root.attributes("-topmost", True)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.bind("<Escape>", lambda _event: self.close())
-        self.root.bind("<Unmap>", self.on_unmap)
-        self.root.bind("<Map>", self.on_map)
         self.root.iconbitmap(str(asset("cat.ico")))
 
         self.no_music = no_music
@@ -165,7 +163,6 @@ class BounceApp:
             return
         self.started = True
         self.sync_count()
-        self.root.lift()
         if not self.no_music:
             self.play_music()
         self.last_frame = time.monotonic()
@@ -183,7 +180,7 @@ class BounceApp:
         window.attributes("-topmost", True)
         window.geometry(f"{size}x{size}+{round(x)}+{round(y)}")
         tk.Label(window, image=self.small_image, borderwidth=0, highlightthickness=0).pack()
-        window.bind("<Button-1>", lambda _event: self.root.lift())
+        window.bind("<Button-1>", lambda _event: self.raise_controls())
         self.sprites.append({
             "window": window,
             "x": x,
@@ -200,7 +197,7 @@ class BounceApp:
             self.create_sprite()
         while len(self.sprites) > target:
             self.sprites.pop()["window"].destroy()
-        self.root.lift()
+        self.raise_controls()
 
     def move(self) -> None:
         if not self.running:
@@ -230,8 +227,11 @@ class BounceApp:
                 sprite["last_bounce"] = now
             sprite["x"], sprite["y"] = x, y
             sprite["window"].geometry(f"+{round(x)}+{round(y)}")
-        self.root.lift()
         self.timer_id = self.root.after(33, self.move)
+
+    def raise_controls(self) -> None:
+        if self.root.state() == "normal":
+            self.root.lift()
 
     def update_speed_label(self, _value: str) -> None:
         self.speed_label.configure(text=f"speed: {self.average_speed.get()}")
@@ -240,17 +240,6 @@ class BounceApp:
         self.count_label.configure(text=f"cats: {self.target_count.get()}")
         if self.started:
             self.sync_count()
-
-    def on_unmap(self, event: tk.Event) -> None:
-        if event.widget == self.root and self.root.state() == "iconic":
-            for sprite in self.sprites:
-                sprite["window"].withdraw()
-
-    def on_map(self, event: tk.Event) -> None:
-        if event.widget == self.root:
-            for sprite in self.sprites:
-                sprite["window"].deiconify()
-            self.root.lift()
 
     def play_music(self) -> None:
         if self.music.play():
