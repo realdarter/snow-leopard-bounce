@@ -6,6 +6,7 @@ import sys
 import time
 import tkinter as tk
 import winsound
+from ctypes import wintypes
 from pathlib import Path
 
 
@@ -19,6 +20,34 @@ def enable_dpi_awareness() -> None:
         ctypes.windll.user32.SetProcessDPIAware()
     except (AttributeError, OSError):
         pass
+
+
+def make_click_through(window: tk.Toplevel) -> None:
+    window.update_idletasks()
+    user32 = ctypes.WinDLL("user32", use_last_error=True)
+    user32.GetAncestor.argtypes = (wintypes.HWND, wintypes.UINT)
+    user32.GetAncestor.restype = wintypes.HWND
+    user32.GetWindowLongPtrW.argtypes = (wintypes.HWND, ctypes.c_int)
+    user32.GetWindowLongPtrW.restype = ctypes.c_ssize_t
+    user32.SetWindowLongPtrW.argtypes = (wintypes.HWND, ctypes.c_int, ctypes.c_ssize_t)
+    user32.SetWindowLongPtrW.restype = ctypes.c_ssize_t
+    user32.SetLayeredWindowAttributes.argtypes = (wintypes.HWND, wintypes.COLORREF, wintypes.BYTE, wintypes.DWORD)
+    user32.SetLayeredWindowAttributes.restype = wintypes.BOOL
+    user32.SetWindowPos.argtypes = (wintypes.HWND, wintypes.HWND, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int, wintypes.UINT)
+    user32.SetWindowPos.restype = wintypes.BOOL
+
+    hwnd = user32.GetAncestor(window.winfo_id(), 2)
+    if not hwnd:
+        raise ctypes.WinError(ctypes.get_last_error())
+    style = user32.GetWindowLongPtrW(hwnd, -20)
+    ctypes.set_last_error(0)
+    previous = user32.SetWindowLongPtrW(hwnd, -20, style | 0x00080020)
+    if not previous and ctypes.get_last_error():
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not user32.SetLayeredWindowAttributes(hwnd, 0, 255, 2):
+        raise ctypes.WinError(ctypes.get_last_error())
+    if not user32.SetWindowPos(hwnd, None, 0, 0, 0, 0, 0x37):
+        raise ctypes.WinError(ctypes.get_last_error())
 
 
 class MusicPlayer:
@@ -180,7 +209,7 @@ class BounceApp:
         window.attributes("-topmost", True)
         window.geometry(f"{size}x{size}+{round(x)}+{round(y)}")
         tk.Label(window, image=self.small_image, borderwidth=0, highlightthickness=0).pack()
-        window.bind("<Button-1>", lambda _event: self.raise_controls())
+        make_click_through(window)
         self.sprites.append({
             "window": window,
             "x": x,

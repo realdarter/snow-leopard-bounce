@@ -2,7 +2,7 @@
 
 it puts 50 cats on your screen and they bounce around. that's pretty much it.
 
-use the sliders to change how many cats there are or how fast they go. they speed up when they hit the edge, then slow back down. you can minimize the main window and the cats will keep going. close it or hit **stop cats** to get rid of them and stop the music.
+use the sliders to change how many cats there are or how fast they go. they speed up when they hit the edge, then slow back down. you can click right through them, and they keep going when you minimize the main window. close it or hit **stop cats** to get rid of them and stop the music.
 
 ## run it
 
