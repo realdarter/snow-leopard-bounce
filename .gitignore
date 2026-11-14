@@ -2,8 +2,10 @@ __pycache__/
 build/
 dist/
 *.spec
+!SnowLeopardBounce.spec
 *.mp3
 !Blue-Skies.mp3
 *.m4a
 *.zip
+*.tar.gz
 preview*.png

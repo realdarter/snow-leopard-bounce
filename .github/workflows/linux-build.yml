@@ -1,0 +1,40 @@
+name: Build Linux app
+
+on:
+  push:
+    branches: [linux-support-*]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install desktop tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y python3-tk python3-venv xvfb xdotool libxext6
+      - name: Install Python packages
+        run: |
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --upgrade pip
+          .venv/bin/python -m pip install pygame==2.6.1 pyinstaller==6.22.3
+      - name: Test Linux desktop behavior
+        run: xvfb-run -a -s '-screen 0 1280x800x24' env SDL_AUDIODRIVER=dummy .venv/bin/python tests/linux_smoke.py
+      - name: Build Linux app
+        run: |
+          .venv/bin/python -m PyInstaller --noconfirm --clean --onedir --windowed --name SnowLeopardBounce \
+            --add-data 'cat-small.png:.' --add-data 'cat-large.png:.' \
+            --add-data 'cat-tune.wav:.' --add-data 'Blue-Skies.mp3:.' \
+            snow_leopard_bounce.pyw
+      - name: Test packaged app
+        run: xvfb-run -a -s '-screen 0 1280x800x24' env SDL_AUDIODRIVER=dummy timeout 12s dist/SnowLeopardBounce/SnowLeopardBounce --count 2 --duration 3
+      - name: Pack Linux download
+        run: tar -czf SnowLeopardBounce-Linux-x86_64.tar.gz -C dist SnowLeopardBounce
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SnowLeopardBounce-Linux-x86_64
+          path: SnowLeopardBounce-Linux-x86_64.tar.gz
+          if-no-files-found: error

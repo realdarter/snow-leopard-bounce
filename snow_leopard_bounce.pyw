@@ -1,13 +1,17 @@
 import argparse
 import ctypes
 import math
+import os
 import random
 import sys
 import time
 import tkinter as tk
-import winsound
 from ctypes import wintypes
+from ctypes.util import find_library
 from pathlib import Path
+
+if sys.platform == "win32":
+    import winsound
 
 
 def asset(name: str) -> Path:
@@ -16,13 +20,20 @@ def asset(name: str) -> Path:
 
 
 def enable_dpi_awareness() -> None:
+    if sys.platform != "win32":
+        return
     try:
         ctypes.windll.user32.SetProcessDPIAware()
     except (AttributeError, OSError):
         pass
 
 
-def make_click_through(window: tk.Toplevel) -> None:
+def song_next_to_app() -> Path:
+    folder = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
+    return folder / "song.mp3"
+
+
+def make_click_through_windows(window: tk.Toplevel) -> None:
     window.update_idletasks()
     user32 = ctypes.WinDLL("user32", use_last_error=True)
     user32.GetAncestor.argtypes = (wintypes.HWND, wintypes.UINT)
@@ -50,7 +61,37 @@ def make_click_through(window: tk.Toplevel) -> None:
         raise ctypes.WinError(ctypes.get_last_error())
 
 
-class MusicPlayer:
+class LinuxClickThrough:
+    def __init__(self) -> None:
+        self.x11 = ctypes.CDLL(find_library("X11") or "libX11.so.6")
+        self.xext = ctypes.CDLL(find_library("Xext") or "libXext.so.6")
+        self.x11.XOpenDisplay.argtypes = (ctypes.c_char_p,)
+        self.x11.XOpenDisplay.restype = ctypes.c_void_p
+        self.x11.XSync.argtypes = (ctypes.c_void_p, ctypes.c_int)
+        self.x11.XCloseDisplay.argtypes = (ctypes.c_void_p,)
+        self.xext.XShapeQueryExtension.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
+        self.xext.XShapeQueryExtension.restype = ctypes.c_int
+        self.xext.XShapeCombineRectangles.argtypes = (ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int)
+        self.display = self.x11.XOpenDisplay(None)
+        if not self.display:
+            raise RuntimeError("An X11 or XWayland desktop is needed to show the cats.")
+        event, error = ctypes.c_int(), ctypes.c_int()
+        if not self.xext.XShapeQueryExtension(self.display, ctypes.byref(event), ctypes.byref(error)):
+            self.close()
+            raise RuntimeError("This desktop does not support click-through cat windows.")
+
+    def apply(self, window: tk.Toplevel) -> None:
+        window.update_idletasks()
+        self.xext.XShapeCombineRectangles(self.display, window.winfo_id(), 2, 0, 0, None, 0, 0, 0)
+        self.x11.XSync(self.display, 0)
+
+    def close(self) -> None:
+        if self.display:
+            self.x11.XCloseDisplay(self.display)
+            self.display = None
+
+
+class WindowsMusicPlayer:
     def __init__(self) -> None:
         self.send = ctypes.windll.winmm.mciSendStringW
         self.send.argtypes = [ctypes.c_wchar_p, ctypes.c_wchar_p, ctypes.c_uint, ctypes.c_void_p]
@@ -58,14 +99,9 @@ class MusicPlayer:
         self.opened = False
         self.wav_playing = False
 
-    @staticmethod
-    def external_song() -> Path:
-        folder = Path(sys.executable).resolve().parent if getattr(sys, "frozen", False) else Path(__file__).resolve().parent
-        return folder / "song.mp3"
-
     def play(self) -> bool:
         self.close()
-        song = self.external_song()
+        song = song_next_to_app()
         if song.is_file() and self.play_mp3(song):
             return True
         bundled_song = asset("Blue-Skies.mp3")
@@ -99,6 +135,36 @@ class MusicPlayer:
             self.wav_playing = False
 
 
+class LinuxMusicPlayer:
+    def __init__(self) -> None:
+        os.environ.setdefault("PYGAME_HIDE_SUPPORT_PROMPT", "1")
+        import pygame
+        self.pygame = pygame
+
+    def play(self) -> bool:
+        self.close()
+        try:
+            self.pygame.mixer.init()
+        except self.pygame.error:
+            return False
+        for song in (song_next_to_app(), asset("Blue-Skies.mp3"), asset("cat-tune.wav")):
+            if song.is_file():
+                try:
+                    self.pygame.mixer.music.load(str(song))
+                    self.pygame.mixer.music.play(-1)
+                    return True
+                except self.pygame.error:
+                    pass
+        self.close()
+        return False
+
+    def close(self) -> None:
+        if self.pygame.mixer.get_init():
+            self.pygame.mixer.music.stop()
+            self.pygame.mixer.music.unload()
+            self.pygame.mixer.quit()
+
+
 class BounceApp:
     def __init__(self, count: int, duration: float, no_music: bool) -> None:
         self.root = tk.Tk()
@@ -111,12 +177,12 @@ class BounceApp:
         self.root.attributes("-topmost", True)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         self.root.bind("<Escape>", lambda _event: self.close())
-        self.root.iconbitmap(str(asset("cat.ico")))
 
         self.no_music = no_music
         self.running = True
         self.music_on = False
-        self.music = MusicPlayer()
+        self.music = WindowsMusicPlayer() if sys.platform == "win32" else LinuxMusicPlayer()
+        self.click_through = None if sys.platform == "win32" else LinuxClickThrough()
         self.timer_id = None
         self.last_frame = time.monotonic()
         self.sprites = []
@@ -126,6 +192,10 @@ class BounceApp:
         self.target_count = tk.IntVar(value=count)
         self.small_image = tk.PhotoImage(file=str(asset("cat-small.png")))
         self.large_image = tk.PhotoImage(file=str(asset("cat-large.png")))
+        if sys.platform == "win32":
+            self.root.iconbitmap(str(asset("cat.ico")))
+        else:
+            self.root.iconphoto(True, self.small_image)
 
         tk.Label(self.root, text="i am pawing your computer", font=("Segoe UI", 16, "bold")).pack(pady=(12, 5))
         tk.Label(self.root, image=self.large_image).pack()
@@ -209,7 +279,10 @@ class BounceApp:
         window.attributes("-topmost", True)
         window.geometry(f"{size}x{size}+{round(x)}+{round(y)}")
         tk.Label(window, image=self.small_image, borderwidth=0, highlightthickness=0).pack()
-        make_click_through(window)
+        if self.click_through:
+            self.click_through.apply(window)
+        else:
+            make_click_through_windows(window)
         self.sprites.append({
             "window": window,
             "x": x,
@@ -296,6 +369,8 @@ class BounceApp:
         for sprite in self.sprites:
             sprite["window"].destroy()
         self.sprites.clear()
+        if self.click_through:
+            self.click_through.close()
         self.root.destroy()
 
     def run(self) -> None:
@@ -308,5 +383,7 @@ if __name__ == "__main__":
     parser.add_argument("--duration", type=float, default=0, help="Auto close after this many seconds")
     parser.add_argument("--no-music", action="store_true")
     args = parser.parse_args()
+    if sys.platform not in ("win32", "linux"):
+        parser.error("Snow Leopard Bounce runs on Windows or Linux.")
     enable_dpi_awareness()
     BounceApp(max(0, min(100, args.count)), args.duration, args.no_music).run()

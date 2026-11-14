@@ -4,7 +4,7 @@ it puts 50 cats on your screen and they bounce around. that's pretty much it.
 
 use the sliders to change how many cats there are or how fast they go. they speed up when they hit the edge, then slow back down. you can click right through them, and they keep going when you minimize the main window. close it or hit **stop cats** to get rid of them and stop the music.
 
-## run it
+## run it on Windows
 
 on a Windows PC, paste this into PowerShell:
 
@@ -14,7 +14,17 @@ irm https://raw.githubusercontent.com/realdarter/snow-leopard-bounce/main/run-on
 
 it downloads the latest release, runs it, and removes the temporary files when you close the app. leave PowerShell open while the cats are running.
 
-you can also grab [the ZIP from Releases](https://github.com/realdarter/snow-leopard-bounce/releases), unzip it, and open `SnowLeopardBounce.exe`. no Python needed for that.
+you can also grab [the Windows ZIP from Releases](https://github.com/realdarter/snow-leopard-bounce/releases), unzip it, and open `SnowLeopardBounce.exe`. no Python needed for that.
+
+## run it on Linux
+
+on a 64-bit Linux desktop with X11 or XWayland, paste this into a terminal:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/realdarter/snow-leopard-bounce/main/run-once-linux.sh | bash
+```
+
+same deal: it downloads the latest release, runs the cats, then removes the temporary files when you close the app. leave the terminal open while they're running. you can also [download the Linux tarball](https://github.com/realdarter/snow-leopard-bounce/releases) and run `SnowLeopardBounce/SnowLeopardBounce` yourself.
 
 ## music
 
@@ -27,6 +37,12 @@ on Windows, with Python installed:
 ```powershell
 python -m pip install pyinstaller
 python -m PyInstaller --noconfirm --clean SnowLeopardBounce.spec
+```
+
+on Linux, install Python, Tk, and the X11 libraries first. then install `pygame` and `pyinstaller`, and build with:
+
+```bash
+python3 -m PyInstaller --noconfirm --clean --onedir --windowed --name SnowLeopardBounce --add-data 'cat-small.png:.' --add-data 'cat-large.png:.' --add-data 'cat-tune.wav:.' --add-data 'Blue-Skies.mp3:.' snow_leopard_bounce.pyw
 ```
 
 the cat photo is mine. the backup tune was made for this app.
