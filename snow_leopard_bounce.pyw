@@ -62,7 +62,8 @@ def make_click_through_windows(window: tk.Toplevel) -> None:
 
 
 class LinuxClickThrough:
-    def __init__(self) -> None:
+    def __init__(self, controls_window: int) -> None:
+        self.controls_window = controls_window
         self.x11 = ctypes.CDLL(find_library("X11") or "libX11.so.6")
         self.xext = ctypes.CDLL(find_library("Xext") or "libXext.so.6")
         self.x11.XOpenDisplay.argtypes = (ctypes.c_char_p,)
@@ -86,14 +87,20 @@ class LinuxClickThrough:
     def apply(self, window: tk.Toplevel) -> None:
         window.update_idletasks()
         windows = [window.winfo_id()]
+        seen = set()
         while windows:
             x_window = windows.pop()
+            if x_window in seen:
+                continue
+            seen.add(x_window)
             self.xext.XShapeCombineRectangles(self.display, x_window, 2, 0, 0, None, 0, 0, 0)
             root, parent = ctypes.c_ulong(), ctypes.c_ulong()
             children = ctypes.POINTER(ctypes.c_ulong)()
             count = ctypes.c_uint()
             if self.x11.XQueryTree(self.display, x_window, ctypes.byref(root), ctypes.byref(parent), ctypes.byref(children), ctypes.byref(count)):
                 windows.extend(children[i] for i in range(count.value))
+                if parent.value not in (0, root.value, self.controls_window):
+                    windows.append(parent.value)
                 if children:
                     self.x11.XFree(children)
         self.x11.XSync(self.display, 0)
@@ -195,7 +202,7 @@ class BounceApp:
         self.running = True
         self.music_on = False
         self.music = WindowsMusicPlayer() if sys.platform == "win32" else LinuxMusicPlayer()
-        self.click_through = None if sys.platform == "win32" else LinuxClickThrough()
+        self.click_through = None if sys.platform == "win32" else LinuxClickThrough(self.root.winfo_id())
         self.timer_id = None
         self.last_frame = time.monotonic()
         self.sprites = []
