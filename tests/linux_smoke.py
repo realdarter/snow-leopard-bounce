@@ -11,7 +11,7 @@ spec = importlib.util.spec_from_loader(loader.name, loader)
 cats = importlib.util.module_from_spec(spec)
 loader.exec_module(cats)
 
-app = cats.BounceApp(1, 0, False)
+app = cats.BounceApp(0, 0, False)
 clicked = []
 result = {}
 target = tk.Toplevel(app.root)
@@ -20,16 +20,22 @@ tk.Button(target, text="click under the cat", command=lambda: clicked.append(Tru
 
 
 def place_cat():
+    result["baseline"] = bool(clicked)
+    clicked.clear()
+    app.target_count.set(1)
+    app.sync_count()
     sprite = app.sprites[0]
     sprite["x"], sprite["y"] = 90.0, 70.0
     sprite["dx"], sprite["dy"] = 0.0, 0.0
     sprite["window"].geometry("+90+70")
     sprite["window"].lift()
+    print("cat window", hex(sprite["window"].winfo_id()), "frame", app.root.tk.call("wm", "frame", sprite["window"]._w), flush=True)
     app.root.after(100, click)
 
 
 def click():
     subprocess.run(["xdotool", "mousemove", "--sync", "130", "110", "click", "1"], check=True)
+    print(subprocess.check_output(["xdotool", "getmouselocation", "--shell"], text=True), flush=True)
     app.root.after(300, finish)
 
 
@@ -39,9 +45,10 @@ def finish():
     app.close()
 
 
+app.root.after(300, lambda: subprocess.run(["xdotool", "mousemove", "--sync", "130", "110", "click", "1"], check=True))
 app.root.after(500, place_cat)
 app.root.after(4000, app.close)
 app.run()
-if result != {"clicked": True, "music": True}:
+if result != {"baseline": True, "clicked": True, "music": True}:
     raise SystemExit(f"Linux desktop check failed: {result}")
 print("Linux click-through and music check passed")
