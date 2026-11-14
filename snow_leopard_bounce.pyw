@@ -69,6 +69,9 @@ class LinuxClickThrough:
         self.x11.XOpenDisplay.restype = ctypes.c_void_p
         self.x11.XSync.argtypes = (ctypes.c_void_p, ctypes.c_int)
         self.x11.XCloseDisplay.argtypes = (ctypes.c_void_p,)
+        self.x11.XQueryTree.argtypes = (ctypes.c_void_p, ctypes.c_ulong, ctypes.POINTER(ctypes.c_ulong), ctypes.POINTER(ctypes.c_ulong), ctypes.POINTER(ctypes.POINTER(ctypes.c_ulong)), ctypes.POINTER(ctypes.c_uint))
+        self.x11.XQueryTree.restype = ctypes.c_int
+        self.x11.XFree.argtypes = (ctypes.c_void_p,)
         self.xext.XShapeQueryExtension.argtypes = (ctypes.c_void_p, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
         self.xext.XShapeQueryExtension.restype = ctypes.c_int
         self.xext.XShapeCombineRectangles.argtypes = (ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_void_p, ctypes.c_int, ctypes.c_int, ctypes.c_int)
@@ -82,11 +85,17 @@ class LinuxClickThrough:
 
     def apply(self, window: tk.Toplevel) -> None:
         window.update_idletasks()
-        widgets = [window]
-        while widgets:
-            widget = widgets.pop()
-            self.xext.XShapeCombineRectangles(self.display, widget.winfo_id(), 2, 0, 0, None, 0, 0, 0)
-            widgets.extend(widget.winfo_children())
+        windows = [window.winfo_id()]
+        while windows:
+            x_window = windows.pop()
+            self.xext.XShapeCombineRectangles(self.display, x_window, 2, 0, 0, None, 0, 0, 0)
+            root, parent = ctypes.c_ulong(), ctypes.c_ulong()
+            children = ctypes.POINTER(ctypes.c_ulong)()
+            count = ctypes.c_uint()
+            if self.x11.XQueryTree(self.display, x_window, ctypes.byref(root), ctypes.byref(parent), ctypes.byref(children), ctypes.byref(count)):
+                windows.extend(children[i] for i in range(count.value))
+                if children:
+                    self.x11.XFree(children)
         self.x11.XSync(self.display, 0)
 
     def close(self) -> None:
