@@ -82,7 +82,11 @@ class LinuxClickThrough:
 
     def apply(self, window: tk.Toplevel) -> None:
         window.update_idletasks()
-        self.xext.XShapeCombineRectangles(self.display, window.winfo_id(), 2, 0, 0, None, 0, 0, 0)
+        widgets = [window]
+        while widgets:
+            widget = widgets.pop()
+            self.xext.XShapeCombineRectangles(self.display, widget.winfo_id(), 2, 0, 0, None, 0, 0, 0)
+            widgets.extend(widget.winfo_children())
         self.x11.XSync(self.display, 0)
 
     def close(self) -> None:
