@@ -34,7 +34,7 @@ def place_cat():
 
 
 def click():
-    subprocess.run(["xdotool", "mousemove", "--sync", "130", "110", "click", "1"], check=True)
+    subprocess.run(["xdotool", "mousemove", "130", "110", "click", "1"], check=True)
     print(subprocess.check_output(["xdotool", "getmouselocation", "--shell"], text=True), flush=True)
     app.root.after(300, finish)
 
@@ -45,7 +45,7 @@ def finish():
     app.close()
 
 
-app.root.after(300, lambda: subprocess.run(["xdotool", "mousemove", "--sync", "130", "110", "click", "1"], check=True))
+app.root.after(300, lambda: subprocess.run(["xdotool", "mousemove", "130", "110", "click", "1"], check=True))
 app.root.after(500, place_cat)
 app.root.after(4000, app.close)
 app.run()
