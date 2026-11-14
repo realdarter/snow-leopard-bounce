@@ -1,5 +1,4 @@
 import importlib.util
-import ctypes
 import subprocess
 import tkinter as tk
 from importlib.machinery import SourceFileLoader
@@ -30,23 +29,11 @@ def place_cat():
     sprite["dx"], sprite["dy"] = 0.0, 0.0
     sprite["window"].geometry("+90+70")
     sprite["window"].lift()
-    print("cat window", hex(sprite["window"].winfo_id()), "frame", app.root.tk.call("wm", "frame", sprite["window"]._w), flush=True)
-    xext = app.click_through.xext
-    xext.XShapeGetRectangles.argtypes = (ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
-    xext.XShapeGetRectangles.restype = ctypes.c_void_p
-    count, order = ctypes.c_int(), ctypes.c_int()
-    for widget in (sprite["window"], *sprite["window"].winfo_children()):
-        ptr = xext.XShapeGetRectangles(app.click_through.display, widget.winfo_id(), 2, ctypes.byref(count), ctypes.byref(order))
-        print("cat input rectangles", widget, hex(widget.winfo_id()), count.value, flush=True)
-        if ptr:
-            app.click_through.x11.XFree.argtypes = (ctypes.c_void_p,)
-            app.click_through.x11.XFree(ptr)
     app.root.after(100, click)
 
 
 def click():
     subprocess.run(["xdotool", "mousemove", "130", "110", "click", "1"], check=True)
-    print(subprocess.check_output(["xdotool", "getmouselocation", "--shell"], text=True), flush=True)
     app.root.after(300, finish)
 
 

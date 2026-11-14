@@ -86,7 +86,8 @@ class LinuxClickThrough:
 
     def apply(self, window: tk.Toplevel) -> None:
         window.update_idletasks()
-        windows = [window.winfo_id()]
+        cat_window = window.winfo_id()
+        windows = [cat_window]
         seen = set()
         while windows:
             x_window = windows.pop()
@@ -99,7 +100,7 @@ class LinuxClickThrough:
             count = ctypes.c_uint()
             if self.x11.XQueryTree(self.display, x_window, ctypes.byref(root), ctypes.byref(parent), ctypes.byref(children), ctypes.byref(count)):
                 windows.extend(children[i] for i in range(count.value))
-                if parent.value not in (0, root.value, self.controls_window):
+                if x_window == cat_window and parent.value not in (0, root.value, self.controls_window):
                     windows.append(parent.value)
                 if children:
                     self.x11.XFree(children)

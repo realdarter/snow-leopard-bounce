@@ -19,13 +19,17 @@ cleanup() {
 trap cleanup EXIT
 
 archive="$run_dir/app.tar.gz"
-curl --fail --location --silent --show-error \
-    'https://github.com/realdarter/snow-leopard-bounce/releases/latest/download/SnowLeopardBounce-Linux-x86_64.tar.gz' \
-    --output "$archive"
+if [[ -n ${SNOW_LEOPARD_ARCHIVE:-} ]]; then
+    cp -- "$SNOW_LEOPARD_ARCHIVE" "$archive"
+else
+    curl --fail --location --silent --show-error \
+        'https://github.com/realdarter/snow-leopard-bounce/releases/latest/download/SnowLeopardBounce-Linux-x86_64.tar.gz' \
+        --output "$archive"
+fi
 tar -xzf "$archive" -C "$run_dir"
 app="$run_dir/SnowLeopardBounce/SnowLeopardBounce"
 if [[ ! -x $app ]]; then
     echo 'The Linux download did not contain SnowLeopardBounce.' >&2
     exit 1
 fi
-"$app"
+"$app" "$@"
