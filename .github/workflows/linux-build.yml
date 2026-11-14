@@ -15,7 +15,7 @@ jobs:
       - name: Install desktop tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y python3-tk python3-venv xvfb xdotool libxext6
+          sudo apt-get install -y python3-tk python3-venv xvfb xdotool libxext6 openbox
       - name: Install Python packages
         run: |
           python3 -m venv .venv
@@ -23,6 +23,15 @@ jobs:
           .venv/bin/python -m pip install pygame==2.6.1 pyinstaller==6.22.3
       - name: Test Linux desktop behavior
         run: xvfb-run -a -s '-screen 0 1280x800x24' env SDL_AUDIODRIVER=dummy .venv/bin/python tests/linux_smoke.py
+      - name: Test minimizing with a window manager
+        run: |
+          xvfb-run -a -s '-screen 0 1280x800x24' bash -c '
+            openbox >/dev/null 2>&1 &
+            wm=$!
+            trap "kill $wm 2>/dev/null || true" EXIT
+            sleep 1
+            SDL_AUDIODRIVER=dummy .venv/bin/python tests/linux_minimize.py
+          '
       - name: Build Linux app
         run: |
           .venv/bin/python -m PyInstaller --noconfirm --clean --onedir --windowed --name SnowLeopardBounce \
@@ -34,7 +43,11 @@ jobs:
       - name: Pack Linux download
         run: tar -czf SnowLeopardBounce-Linux-x86_64.tar.gz -C dist SnowLeopardBounce
       - name: Test Linux run command
-        run: xvfb-run -a -s '-screen 0 1280x800x24' env SDL_AUDIODRIVER=dummy SNOW_LEOPARD_ARCHIVE="$PWD/SnowLeopardBounce-Linux-x86_64.tar.gz" bash run-once-linux.sh --count 1 --duration 2
+        run: |
+          run_temp=$(mktemp -d)
+          xvfb-run -a -s '-screen 0 1280x800x24' env SDL_AUDIODRIVER=dummy TMPDIR="$run_temp" SNOW_LEOPARD_ARCHIVE="$PWD/SnowLeopardBounce-Linux-x86_64.tar.gz" bash run-once-linux.sh --count 1 --duration 2
+          test -z "$(find "$run_temp" -mindepth 1 -print -quit)"
+          rmdir "$run_temp"
       - uses: actions/upload-artifact@v4
         with:
           name: SnowLeopardBounce-Linux-x86_64
