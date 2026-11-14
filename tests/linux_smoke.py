@@ -35,11 +35,12 @@ def place_cat():
     xext.XShapeGetRectangles.argtypes = (ctypes.c_void_p, ctypes.c_ulong, ctypes.c_int, ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int))
     xext.XShapeGetRectangles.restype = ctypes.c_void_p
     count, order = ctypes.c_int(), ctypes.c_int()
-    ptr = xext.XShapeGetRectangles(app.click_through.display, sprite["window"].winfo_id(), 2, ctypes.byref(count), ctypes.byref(order))
-    print("cat input rectangles", count.value, flush=True)
-    if ptr:
-        app.click_through.x11.XFree.argtypes = (ctypes.c_void_p,)
-        app.click_through.x11.XFree(ptr)
+    for widget in (sprite["window"], *sprite["window"].winfo_children()):
+        ptr = xext.XShapeGetRectangles(app.click_through.display, widget.winfo_id(), 2, ctypes.byref(count), ctypes.byref(order))
+        print("cat input rectangles", widget, hex(widget.winfo_id()), count.value, flush=True)
+        if ptr:
+            app.click_through.x11.XFree.argtypes = (ctypes.c_void_p,)
+            app.click_through.x11.XFree(ptr)
     app.root.after(100, click)
 
 
